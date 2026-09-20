@@ -35,6 +35,7 @@ docker compose down
 ## 主要功能
 
 - **多温室总览**：预置两个温室，卡片展示温度、湿度、光照、CO₂、土壤湿度的最新数值；30 秒自动刷新。
+- **温室测量复核闭环**：为温室创建批次后逐项录入（仅限该温室传感器）；同一传感器一批仅一条，重复/并发录入冲突且不覆盖。提交时缺项、重复或超阈值整批拒绝、不生成正式读数并返回待修正项；全部合格后原子归档并写入正式读数，归档后追加录入或重复提交直接失败。总览页可创建批次、逐项录入、提交，并区分展示待提交、已归档与校验失败原因，刷新后状态一致。
 - **传感器采集与模拟**：通过 API 写入传感器读数；总览页可一键生成一轮演示采样。
 - **趋势与历史**：按温室和日/周/月范围查看 ECharts 折线趋势，支持图表缩放、平移及 CSV 导出。
 - **阈值报警**：每个传感器具备上下限；超限时持久化报警并通过 WebSocket 推送，支持标记为已处理。
@@ -89,6 +90,12 @@ npm run dev
 | GET / PATCH | `/api/v1/alerts`、`/api/v1/alerts/:id/handle` | 报警查询 / 处理 |
 | GET / PATCH | `/api/v1/devices`、`/api/v1/devices/:id/toggle` | 设备查询 / 开关 |
 | POST | `/api/v1/schedules` | 创建设备定时任务 |
+| GET / POST | `/api/v1/measurement/batches` | 复核批次列表（可按 `greenhouse_id`、`status` 过滤）/ 为温室创建批次 |
+| GET | `/api/v1/measurement/batches/:id` | 批次详情：录入项、阈值、最近待修正项 |
+| POST | `/api/v1/measurement/batches/:id/entries` | 逐项录入；仅允许该温室传感器，重复/并发返回 409 且不覆盖 |
+| PUT | `/api/v1/measurement/batches/:id/entries` | 显式修正草稿批次中的既有录入值 |
+| GET | `/api/v1/measurement/batches/:id/check` | 当前待修正项（缺项/重复/超阈值），不改变状态 |
+| POST | `/api/v1/measurement/batches/:id/submit` | 提交复核；不合格返回 422 + `issues` 整批拒绝且不写读数，合格则原子归档并写入读数；重复提交返回 409 |
 | GET | `/api/v1/reports/environment?greenhouse_id=1&range=day` | 环境分析报告 |
 | GET | `/ws` | WebSocket 读数/报警/设备状态推送 |
 

@@ -13,14 +13,15 @@ import (
 )
 
 type Dependencies struct {
-	Config     config.Config
-	Logger     *slog.Logger
-	Auth       *service.AuthService
-	Monitoring *service.MonitoringService
-	Alerts     *service.AlertService
-	Control    *service.ControlService
-	Reports    *service.ReportService
-	Hub        *ws.Hub
+	Config      config.Config
+	Logger      *slog.Logger
+	Auth        *service.AuthService
+	Monitoring  *service.MonitoringService
+	Alerts      *service.AlertService
+	Control     *service.ControlService
+	Reports     *service.ReportService
+	Measurement *service.MeasurementService
+	Hub         *ws.Hub
 }
 
 func New(d Dependencies) *gin.Engine {
@@ -34,6 +35,7 @@ func New(d Dependencies) *gin.Engine {
 	alerts := handler.NewAlertHandler(d.Alerts)
 	devices := handler.NewDeviceHandler(d.Control, v)
 	reports := handler.NewReportHandler(d.Reports)
+	measurement := handler.NewMeasurementHandler(d.Measurement, v)
 	r.GET(constants.HealthPath, func(c *gin.Context) { handler.Success(c, gin.H{"status": "healthy"}) })
 	r.GET(constants.WebSocketPath, func(c *gin.Context) { d.Hub.Handle(c.Writer, c.Request) })
 	api := r.Group(constants.APIPrefix)
@@ -45,6 +47,9 @@ func New(d Dependencies) *gin.Engine {
 	api.GET("/alerts", alerts.List)
 	api.GET("/devices", devices.List)
 	api.GET("/reports/environment", reports.Get)
+	api.GET("/measurement/batches", measurement.ListBatches)
+	api.GET("/measurement/batches/:id", measurement.GetBatch)
+	api.GET("/measurement/batches/:id/check", measurement.Check)
 	secured := api.Group("")
 	secured.Use(middleware.Auth(d.Auth))
 	secured.POST("/greenhouses", greenhouse.Create)
@@ -56,5 +61,9 @@ func New(d Dependencies) *gin.Engine {
 	secured.PATCH("/devices/:id/toggle", devices.Toggle)
 	secured.POST("/schedules", devices.Schedule)
 	secured.GET("/devices/:id/schedules", devices.Schedules)
+	secured.POST("/measurement/batches", measurement.CreateBatch)
+	secured.POST("/measurement/batches/:id/entries", measurement.AddEntry)
+	secured.PUT("/measurement/batches/:id/entries", measurement.CorrectEntry)
+	secured.POST("/measurement/batches/:id/submit", measurement.Submit)
 	return r
 }

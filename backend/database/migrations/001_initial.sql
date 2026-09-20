@@ -1,2 +1,22 @@
 -- Schema is managed by GORM AutoMigrate on application startup.
 -- This file documents the initial migration boundary for DBAs.
+--
+-- 测量复核闭环在 AutoMigrate 中新增两张表（随应用启动自动创建）：
+--   measurement_batches
+--     id              BIGINT PRIMARY KEY AUTO_INCREMENT
+--     batch_no        VARCHAR(40) NOT NULL UNIQUE          -- 批次号，如 MB20260920-001
+--     greenhouse_id   BIGINT NOT NULL, INDEX
+--     status          VARCHAR(16) NOT NULL DEFAULT 'draft' -- draft | archived, INDEX
+--     submitted_at    DATETIME NULL                        -- 归档时间
+--     last_checked_at DATETIME NULL                        -- 最近一次校验时间
+--     last_issues     JSON NOT NULL                        -- 待修正项快照（刷新后仍可见）
+--     created_at / updated_at DATETIME
+--   batch_entries
+--     id BIGINT PRIMARY KEY AUTO_INCREMENT
+--     batch_id  BIGINT NOT NULL
+--     sensor_id BIGINT NOT NULL
+--     value DOUBLE NOT NULL
+--     created_at / updated_at DATETIME
+--     UNIQUE KEY uniq_batch_sensor (batch_id, sensor_id)   -- 同一传感器一批仅一条
+-- 提交在单个事务内完成“行锁校验 → 写 sensor_readings → 条件更新状态为 archived”，
+-- 任一环节失败整体回滚；归档后追加录入或重复提交直接返回 409。

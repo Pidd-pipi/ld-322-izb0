@@ -12,3 +12,15 @@ paths:
     post: {summary: Ingest a sensor reading, responses: {'201': {description: Created}}}
   /api/v1/alerts:
     get: {summary: List alerts, responses: {'200': {description: OK}}}
+  /api/v1/measurement/batches:
+    get: {summary: 列出测量复核批次（可按 greenhouse_id、status 过滤）, responses: {'200': {description: OK}}}
+    post: {summary: 为温室创建复核批次，初始为草稿态, responses: {'201': {description: Created}}}
+  /api/v1/measurement/batches/{id}:
+    get: {summary: 批次详情（录入项、传感器阈值、最近待修正项）, responses: {'200': {description: OK}, '404': {description: 批次不存在}}}
+  /api/v1/measurement/batches/{id}/entries:
+    post: {summary: 逐项录入测量值；仅允许该温室传感器，重复/并发录入冲突且不覆盖, responses: {'201': {description: Created}, '403': {description: 传感器不属于该温室}, '409': {description: 重复录入或批次已归档}}}
+    put: {summary: 显式修正草稿批次中的既有录入值, responses: {'200': {description: OK}, '400': {description: 尚未录入该传感器}}}
+  /api/v1/measurement/batches/{id}/check:
+    get: {summary: 返回当前待修正项（缺项/超阈值），不改变批次状态, responses: {'200': {description: OK}}}
+  /api/v1/measurement/batches/{id}/submit:
+    post: {summary: 提交复核；不合格整批拒绝（422+issues）不生成正式读数，合格则原子归档并写入读数, responses: {'200': {description: 已归档并写入读数}, '409': {description: 重复提交，批次已归档}, '422': {description: 校验失败，返回待修正项}}}

@@ -11,3 +11,7 @@ backend/server
 *.test
 coverage.out
 frontend/coverage/
+# 本地构建用的临时 Go 工具链与模块缓存（非项目组成部分）
+.toolchain/
+.gopath/
+.gocache/

@@ -20,6 +20,11 @@ func Fail(c *gin.Context, err error) {
 		c.JSON(business.Status, gin.H{"code": business.Code, "message": business.Message, "data": nil})
 		return
 	}
+	var rejected *apperrors.BatchRejectedError
+	if errors.As(err, &rejected) {
+		c.JSON(rejected.Status(), gin.H{"code": 42201, "message": rejected.Error(), "data": gin.H{"batchId": rejected.BatchID, "issues": rejected.Issues}})
+		return
+	}
 	if errors.Is(err, apperrors.ErrRecordNotFound) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 40401, "message": "资源不存在", "data": nil})
 		return
