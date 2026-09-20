@@ -12,3 +12,15 @@ paths:
     post: {summary: Ingest a sensor reading, responses: {'201': {description: Created}}}
   /api/v1/alerts:
     get: {summary: List alerts, responses: {'200': {description: OK}}}
+  /api/v1/greenhouses/{id}/batches:
+    get: {summary: List measurement review batches of a greenhouse, responses: {'200': {description: OK}}}
+    post: {summary: Open a review batch (409 if one is still open), responses: {'201': {description: Created}, '409': {description: An unarchived batch already exists}}}
+  /api/v1/batches/{id}:
+    get: {summary: Batch detail with draft entries and review issues, responses: {'200': {description: OK}}}
+  /api/v1/batches/{id}/entries:
+    post: {summary: Append a draft entry (one per sensor, never overwritten), responses: {'201': {description: Created}, '400': {description: Sensor does not belong to the greenhouse}, '409': {description: Duplicate entry or batch archived}}}
+  /api/v1/batches/{id}/entries/{entryId}:
+    put: {summary: Correct a draft entry value, responses: {'200': {description: OK}, '409': {description: Batch archived}}}
+    delete: {summary: Remove a draft entry, responses: {'200': {description: OK}, '409': {description: Batch archived}}}
+  /api/v1/batches/{id}/submit:
+    post: {summary: Submit the batch; atomically archives and writes readings, or rejects with pending fixes, responses: {'200': {description: Archived}, '409': {description: Batch already archived}, '422': {description: Validation failed, data carries issues to fix}}}

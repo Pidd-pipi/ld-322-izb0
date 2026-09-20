@@ -20,6 +20,7 @@ type Dependencies struct {
 	Alerts     *service.AlertService
 	Control    *service.ControlService
 	Reports    *service.ReportService
+	Batches    *service.BatchService
 	Hub        *ws.Hub
 }
 
@@ -34,6 +35,7 @@ func New(d Dependencies) *gin.Engine {
 	alerts := handler.NewAlertHandler(d.Alerts)
 	devices := handler.NewDeviceHandler(d.Control, v)
 	reports := handler.NewReportHandler(d.Reports)
+	batches := handler.NewBatchHandler(d.Batches, v)
 	r.GET(constants.HealthPath, func(c *gin.Context) { handler.Success(c, gin.H{"status": "healthy"}) })
 	r.GET(constants.WebSocketPath, func(c *gin.Context) { d.Hub.Handle(c.Writer, c.Request) })
 	api := r.Group(constants.APIPrefix)
@@ -45,6 +47,8 @@ func New(d Dependencies) *gin.Engine {
 	api.GET("/alerts", alerts.List)
 	api.GET("/devices", devices.List)
 	api.GET("/reports/environment", reports.Get)
+	api.GET("/greenhouses/:id/batches", batches.List)
+	api.GET("/batches/:id", batches.Detail)
 	secured := api.Group("")
 	secured.Use(middleware.Auth(d.Auth))
 	secured.POST("/greenhouses", greenhouse.Create)
@@ -56,5 +60,10 @@ func New(d Dependencies) *gin.Engine {
 	secured.PATCH("/devices/:id/toggle", devices.Toggle)
 	secured.POST("/schedules", devices.Schedule)
 	secured.GET("/devices/:id/schedules", devices.Schedules)
+	secured.POST("/greenhouses/:id/batches", batches.Create)
+	secured.POST("/batches/:id/entries", batches.AddEntry)
+	secured.PUT("/batches/:id/entries/:entryId", batches.UpdateEntry)
+	secured.DELETE("/batches/:id/entries/:entryId", batches.DeleteEntry)
+	secured.POST("/batches/:id/submit", batches.Submit)
 	return r
 }

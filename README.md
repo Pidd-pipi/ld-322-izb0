@@ -35,6 +35,7 @@ docker compose down
 ## 主要功能
 
 - **多温室总览**：预置两个温室，卡片展示温度、湿度、光照、CO₂、土壤湿度的最新数值；30 秒自动刷新。
+- **测量复核闭环**：为温室创建测量批次后逐项录入本温室传感器草稿（一批一传感器仅一条，重复/并发录入不覆盖）；提交时缺项、重复或越限整批拒绝并返回待修正项，全部合格后原子归档写入正式读数，归档后追加或重复提交直接失败。
 - **传感器采集与模拟**：通过 API 写入传感器读数；总览页可一键生成一轮演示采样。
 - **趋势与历史**：按温室和日/周/月范围查看 ECharts 折线趋势，支持图表缩放、平移及 CSV 导出。
 - **阈值报警**：每个传感器具备上下限；超限时持久化报警并通过 WebSocket 推送，支持标记为已处理。
@@ -90,6 +91,11 @@ npm run dev
 | GET / PATCH | `/api/v1/devices`、`/api/v1/devices/:id/toggle` | 设备查询 / 开关 |
 | POST | `/api/v1/schedules` | 创建设备定时任务 |
 | GET | `/api/v1/reports/environment?greenhouse_id=1&range=day` | 环境分析报告 |
+| GET / POST | `/api/v1/greenhouses/:id/batches` | 测量批次列表 / 创建批次（存在未归档批次时 409） |
+| GET | `/api/v1/batches/:id` | 批次详情（草稿条目与待修正项） |
+| POST | `/api/v1/batches/:id/entries` | 逐项录入草稿（非本温室传感器 400，重复录入 409 不覆盖） |
+| PUT / DELETE | `/api/v1/batches/:id/entries/:entryId` | 修正 / 删除草稿条目（已归档 409） |
+| POST | `/api/v1/batches/:id/submit` | 提交复核：合格则原子归档写入读数；缺项/重复/越限则 422 返回待修正项 |
 | GET | `/ws` | WebSocket 读数/报警/设备状态推送 |
 
 完整的接口轮廓位于 [`backend/api/openapi.yaml`](backend/api/openapi.yaml)。

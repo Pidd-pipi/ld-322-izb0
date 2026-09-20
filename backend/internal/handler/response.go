@@ -26,3 +26,13 @@ func Fail(c *gin.Context, err error) {
 	}
 	c.JSON(http.StatusInternalServerError, gin.H{"code": 50001, "message": "服务器内部错误", "data": nil})
 }
+
+// FailWithData 与 Fail 类似，但允许在错误响应中携带业务数据（如批次校验待修正项）。
+func FailWithData(c *gin.Context, err error, data any) {
+	var business *apperrors.BusinessError
+	if errors.As(err, &business) {
+		c.JSON(business.Status, gin.H{"code": business.Code, "message": business.Message, "data": data})
+		return
+	}
+	Fail(c, err)
+}
